@@ -1,30 +1,45 @@
-pragma solidity 0.5.0;
 
-library SafeERC20 {
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {}
-}
 
-interface IERC20 {
-    function transferFrom(address, address, uint256) external returns(bool);
-}
+//pragma solidity 0.5.0;
 
-contract ERC20 is IERC20 {
+//library SafeERC20 {
+//    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {}
+//}
+//
+//interface IERC20 {
+//    function transferFrom(address, address, uint256) external returns(bool);
+//}
+
+contract ERC20 {
+     mapping(address => uint256) private _balances;
     function transferFrom(address from, address to, uint256 amount) external returns(bool) {
+        _balances[from] = _balances[from] - amount;
+        _balances[to] = _balances[to] + amount;
         return true;
     }
 }
 
 contract C {
-    using SafeERC20 for IERC20;
+//    using SafeERC20 for IERC20;
 
-    IERC20 erc20;
+    ERC20 erc20;
     address notsend;
-    address send;
+    address sender;
+    uint timelock;
+//    mapping(byte32 => bool) private _balances;
+
+    event eventsend(address, address, uint256, uint256);
+
+    event eventsend2(address, address, uint256, uint256);
+
+    event eventreceive(address, address, uint256);
+
+    event eventreceive2(bytes32);
 
     constructor() public {
         erc20 = new ERC20();
         notsend = address(0x3);
-        send = msg.sender;
+        sender = msg.sender;
     }
 
 //    function good1(address to, uint256 am) public {
@@ -41,28 +56,39 @@ contract C {
 //        int_transferFrom(from_msgsender, to, am);
 //    }
 
-    function goodX(address from, address to, uint256 am) public {
-        if (from == msg.sender)
+    function send(address taint, address from, address to, uint256 am, uint256 dstchain) public payable{
+
+        if(taint == sender){
+
+        if(msg.sender == sender)
         {
-            if (to == send)
-            {
-                return;
-            }
-         erc20.transferFrom(from, to, am);
-            erc20.transferFrom(from, to, am);
+        ERC20(taint).transferFrom(from, to, am);
+            emit eventsend2(from, to, am, dstchain);
         }
 
-        if (to == tx.origin)
-        {
-         erc20.transferFrom(from, to, am);
-        }
 
-        if (to == notsend)
-        {
-            erc20.transferFrom(from, to, am);
         }
 
     }
+
+
+//    function receive2(bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s) public returns (address) {
+//        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+//        bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
+//        address signer = ecrecover(prefixedHashMessage, _v, _r, _s);
+//        erc20.transferFrom(address(this), signer, 20);
+//        emit eventreceive2(_hashedMessage);
+//        return signer;
+//    }
+
+    function receive(bytes32 _hashedMessage, address to, uint256 am) public {
+        if(msg.sender == sender)
+        {
+            erc20.transferFrom(address(this), to, am);
+//            emit eventreceive(from, to, am);
+        }
+    }
+
 
     // This is not detected
 //    function bad2(address from, address to, uint256 am) public {
